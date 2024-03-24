@@ -1,0 +1,214 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário</title>
+    <!-- Adicionando Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        /* Estilos adicionais */
+
+        .item-noticia {
+            display: flex;
+            text-align: center;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            background-color: gray;
+        }
+
+        #newsDiv {
+            padding: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2 class="mt-5 mb-4 text-center">Cadastro de Notícias</h2>
+        <form id="dataForm">
+            <div class="mb-3">
+                <label for="titulo" class="form-label">Título:</label>
+                <input type="text" id="titulo" name="titulo" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="fonte" class="form-label">Fonte:</label>
+                <input type="text" id="fonte" name="fonte" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="foto" class="form-label">URL da Foto:</label>
+                <input type="text" id="foto" name="foto" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="pdf" class="form-label"> Caminho do PDF:</label>
+                <input type="text" id="pdf" name="pdf" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="link" class="form-label">URL da Notícia:</label>
+                <input type="text" id="link" name="link" class="form-control" required>
+            </div>
+            <div class="text-center">
+                <button id="addButton" type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+        </form>
+
+        <div id="newsDiv" style="display: none;">
+            <h2>Notícias cadastradas</h2>
+        </div>
+
+
+
+        <div id="newsList" class="mt-2">
+
+        </div>
+
+
+        <div id="alertContainer" class="position-fixed top-0 start-50 translate-middle-x mt-5"
+            style="z-index: 11; display: none;"></div>
+
+        <button id="alertButton" type="button" class="btn d-none" data-bs-toggle="modal"
+            data-bs-target="#alertModal"></button>
+
+        <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmationModalLabel">Confirmação de Exclusão</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Tem certeza que deseja excluir esta notícia?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button id="deleteButton" type="button" class="btn btn-danger" data-id="">Excluir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adicionando Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+
+        const linkAPI = "https://cadastra-noticias-back.onrender.com/api/data"
+        function showDeleteConfirmation(id) {
+            $('#deleteButton').attr('data-id', id); // Define o ID da notícia no atributo data-id do botão de exclusão
+            $('#confirmationModal').modal('show');
+        }
+
+        // Função chamada quando o botão "Excluir" do modal é clicado
+        $('#deleteButton').click(function () {
+            const id = $(this).attr('data-id'); // Obtém o ID da notícia a ser excluída
+            if (id) { // Verifica se o ID da notícia não está vazio ou undefined
+                // Chama a função deleteNews para excluir a notícia
+                deleteNews(id);
+                // Esconde o modal após a exclusão
+                $('#confirmationModal').modal('hide');
+            }
+        });
+        function showAlert(type, message) {
+            const alertDiv = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                      </div>`;
+            $('#alertContainer').html(alertDiv);
+            $('#alertContainer').fadeIn().delay(1000).fadeOut();
+        }
+
+        // Função para excluir uma notícia
+        function deleteNews(id) {
+
+            // if (confirm('Tem certeza que deseja excluir esta notícia?')) {
+            $.ajax({
+                url: `${linkAPI}/${id}`,
+                type: 'DELETE',
+                success: function (response) {
+                    showAlert('success', "Notícia deletada com sucesso!")
+                    loadNews(); // Recarrega a lista de notícias após a exclusão
+                },
+                error: function (error) {
+                    showAlert('danger', "Erro ao excluir notícia!")
+                }
+            });
+            // }
+        }
+
+        // Função para carregar as notícias da API e exibir na página
+        function loadNews() {
+            $.get(`${linkAPI}`, function (news) {
+                $('#newsList').empty(); // Limpa a lista de notícias antes de recarregar
+                if (Array.isArray(news)) { // Verifica se news é um array
+                    if (news.length > 0) {
+                        document.getElementById('newsDiv').style.display = 'block';
+                    } else {
+                        document.getElementById('newsDiv').style.display = 'none';
+                    }
+                    news.forEach(function (item) {
+                        const listItem = `
+                              <div class='item-noticia'>
+                                <h3>${item.titulo}</h3>
+                                <p>Fonte: ${item.fonte}</p>
+                                <button onclick="showDeleteConfirmation('${item._id}')" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> 
+                                </button>
+                              </div`;
+                        $('#newsList').append(listItem);
+                    });
+                } else {
+                    console.error('Dados recebidos não são um array:', news);
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            $('#dataForm').submit(function (e) {
+                e.preventDefault();
+
+                // Obter os valores do formulário
+                const titulo = $('#titulo').val();
+                const fonte = $('#fonte').val();
+                const foto = $('#foto').val();
+                const pdf = $('#pdf').val();
+                const link = $('#link').val();
+
+                // Enviar os dados para a API
+                $.ajax({
+                    url: `${linkAPI}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ titulo, fonte, foto, pdf, link }),
+                    success: function (response) {
+                        showAlert('success', "Cadastro realizado com sucesso!")
+                        // Limpar o formulário após o envio bem-sucedido
+                        $('#dataForm')[0].reset();
+                        loadNews(); // Recarrega a lista de notícias após a adição de uma nova
+                    },
+                    error: function (error) {
+                        alert('Erro ao enviar dados.');
+                    }
+                });
+            });
+
+            // Carrega as notícias quando a página é carregada
+            loadNews();
+        });
+    </script>
+</body>
+
+</html>
